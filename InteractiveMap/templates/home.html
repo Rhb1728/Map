@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Interactive Map</title>
+        <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+        <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+        <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+        <style>
+            body { 
+                margin: 0; padding: 0; 
+            }
+            #map { 
+                position: absolute; top: 0; bottom: 0; width: 100%; 
+            }
+        </style>
+    </head>
+    <body>
+        <style>
+            .filter-group {
+                font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+                font-weight: 600;
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 1;
+                border-radius: 3px;
+                width: 120px;
+                color: #fff;
+            }
+
+            .filter-group input[type='checkbox']:first-child + label {
+                border-radius: 3px 3px 0 0;
+            }
+
+            .filter-group label:last-child {
+                border-radius: 0 0 5px 3px;
+                border: none;
+            }
+
+            .filter-group input[type='checkbox'] {
+                display: none;
+            }
+
+            .filter-group input[type='checkbox'] + label {
+                background-color: #3386c0;
+                display: block;
+                cursor: pointer;
+                padding: 10px;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+            }
+
+            .filter-group input[type='checkbox'] + label {
+                background-color: #3386c0;
+                text-transform: capitalize;
+            }
+
+            .filter-group input[type='checkbox'] + label:hover,
+            .filter-group input[type='checkbox']:checked + label {
+                background-color: #4ea0da;
+            }
+
+            .filter-group input[type='checkbox']:checked + label:before {
+                content: '✔';
+                margin-right: 5px;
+            }
+        </style>
+        <div id="map"></div>
+        <nav id="filter-group" class="filter-group"></nav>
+        
+        <!-- <script src="script.js"></script> -->
+
+        {% load static %}
+        <script type="text/javascript">
+            var csrfToken = "{{ csrf_token }}"; // Assign the CSRF token value
+        </script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script type = "text/javascript">
+            var jsonUrl = "{% static 'map_source.json' %}";
+            let places;
+            fetch(jsonUrl)
+                .then((res) => res.json())
+                .then((jsonData) => {
+                    places = jsonData;
+                })
+                .catch((error) => console.error("Error fetching JSON:", error));
+
+
+
+            mapboxgl.accessToken = 'pk.eyJ1Ijoid2FzaTAwMDA3IiwiYSI6ImNsMmxkc2J0bTFnODgzY2x3ZWx4NXd1OXMifQ.o9Tr7BRTeDo-C45jjo810A';  
+            const filterGroup = document.getElementById('filter-group');
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v12?optimize=true',
+                center: [-0.118092, 51.509865],
+                zoom: 5
+            });
+
+            const popupContent = `
+                <p>Location:</p>
+                <input type="text" name="textLocation" id="textLocation">
+                
+                <p>Profile of Needs:</p>
+                <input type="text" name="textProfile" id="textProfile">
+               
+                <p>Registered Providers:</p>
+                <input type="text" name="textRegistered" id="textRegistered">
+            
+                <p>Care Providers:</p>
+                <input type="text" name="textCare" id="textCare">
+
+                <p>Commissioning / ICB Contacts: </p>
+                <input type="text" name="textICB" id="textICB">
+                
+                <p>Nominations and Void Agreements: </p>
+                <input type="text" name="textAgreements" id="textAgreements">
+
+                <p>Additional Notes: </p>
+                <input type="text" name="textNotes" id="textNotes">
+
+                <p>Enter a color code:</p>
+                <input type="color" name="colorInput" id="colorInput">
+                <button id="setTextBtn">Enter</button>
+            `;
+
+            
+
+            const markerMap = {},markertype = {};
+            const layermap = {};
+            map.on('load', () => {
+                let openPopups = [];
+                function closeAllPopups() {
+                    for (const popup of openPopups) {
+                        popup.remove();
+                    }
+                    openPopups = []; // Clear the array
+                }
+                
+                for (const mapData of places.map) {
+                    const mapId = mapData.id;
+
+                    const symbol = mapId;
+                    const layerID = `poi-${mapId}`;
+
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.id = layerID;
+                    input.checked = false;
+                    filterGroup.appendChild(input);
+
+                    const label = document.createElement('label');
+                    label.setAttribute('for', layerID);
+                    label.textContent = symbol;
+                    filterGroup.appendChild(label);
+
+                    const markers = [],layers = [],markers_type = [];
+                    let markerClicked = false;
+
+                    for (const polygon of mapData.polygons) {
+                        let info = '';
+                        const map_layerID = `poi-${polygon.features.properties["name"]}`;
+
+                        // Mark popup for color
+                        const color = polygon.color;
+                        const [longitude, latitude] = color;
+                        const marker = new mapboxgl.Marker()
+                            .setLngLat([longitude, latitude]);
+                        // Setting popup html
+                        let markerPopup = new mapboxgl.Popup();
+                        markerPopup.setHTML(popupContent);
+                        marker.setPopup(markerPopup);  
+                        markers.push(marker);
+                        markers_type.push(0);
+
+                        // Mark popup for text
+                        const text = polygon.text;
+                        const [longitude1, latitude1] = text;
+                        const marker1 = new mapboxgl.Marker()
+                            .setLngLat([longitude1, latitude1]);
+                        // Setting popup html
+                        let markerPopup1 = new mapboxgl.Popup();
+                        marker1.setPopup(markerPopup1); 
+
+                        // if any marker are clicked so that the info popup does not appear
+                        marker.getElement().addEventListener('click', () => {
+                            markerClicked = true;
+                        });
+                        
+                        // Changing color frrom the marker pop up
+                        markerPopup.on('open', () => {
+                            const setTextBtn = document.getElementById('setTextBtn');
+
+                            setTextBtn.addEventListener('click', () => {
+                               
+                                const setColor = document.getElementById('colorInput');
+                                
+                                map.setPaintProperty(map_layerID, 'fill-color', setColor.value); 
+                                $.ajax({
+                                    type : 'POST',
+                                    url : '/create',
+                                    data : {
+                                        setColor : $('#colorInput').val(),
+                                        setLocation : $('#textLocation').val(),
+                                        setProfile : $('#textProfile').val(),
+                                        setRegistered : $('#textRegistered').val(),
+                                        setCare : $('#textCare').val(),
+                                        setICB : $('#textICB').val(),
+                                        setAgreements : $('#textAgreements').val(),
+                                        setNotes : $('#textNotes').val(),
+                                        setMapID : map_layerID,                            
+                                        csrfmiddlewaretoken : csrfToken
+                                    },
+                                    success : function(){
+                                        console.log("sending data")
+                                    }
+                                })
+                                markerPopup.remove(); 
+                            });
+
+                        });
+                        
+
+                        if (!map.getLayer(layerID)) {
+                            
+                            $.ajax({
+                                    url: '/get_info_data/',
+                                    data: { mapID: map_layerID }, // Send the mapID as a parameter
+                                    dataType: 'json',
+                                    success: function(data) {
+                                        let polygon_color = '#ffffff';
+                                        // Populate the table with fetched data
+                                        for (const obj of data) {
+                                            polygon_color = obj.color;
+                                        }
+
+                                        const geojson = polygon.features;
+                                        map.addSource(map_layerID, {
+                                            type: 'geojson',
+                                            data: geojson,
+                                        });
+                                        map.addLayer({
+                                            'id': map_layerID,
+                                            'type': 'fill',
+                                            'source': map_layerID, // reference the data source
+                                            'layout': {
+                                                'visibility': 'none',
+                                            },
+                                            'paint': {
+                                            'fill-color': polygon_color, // blue color fill
+                                            'fill-opacity': 0.5
+                                            }
+
+                                        });
+                                        // Add a black outline around the polygon.
+                                        map.addLayer({
+                                            'id': map_layerID + 'outline',
+                                            'type': 'line',
+                                            'source': map_layerID,
+                                            'layout': {
+                                                'visibility': 'none'
+                                            },
+                                            'paint': {
+                                            'line-color': '#000',
+                                            'line-width': 3
+                                            }
+                                        });
+
+                                        layers.push(map_layerID);
+                                    }
+                                });
+
+                            const label_places = {
+                                'type': 'FeatureCollection',
+                                'features': [
+                                    {
+                                        'type': 'Feature',
+                                        'properties': {
+                                            'description': polygon.features.properties["name"]
+                                        },
+                                        'geometry': {
+                                            'type': 'Point',
+                                            'coordinates': [longitude1, latitude1]
+                                        }
+                                    }]
+                                }
+                            map.addSource(map_layerID + 'labels', {
+                                'type': 'geojson',
+                                'data': label_places
+                            });
+
+                            map.addLayer({
+                                'id': map_layerID + 'labels',
+                                'type': 'symbol',
+                                'source': map_layerID + 'labels',
+                                'layout': {
+                                    'text-field': ['get', 'description'],
+                                    'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                                    'text-radial-offset': 0.5,
+                                    'text-justify': 'auto',
+                                    'visibility': 'none'
+                                },
+                                paint: {
+                                    "text-color": "red"
+                                }
+                            });
+
+                           
+                            
+                        }
+
+                        map.on('click', map_layerID, (e) => {
+                            // Check if the layer's visibility is 'visible' before showing the popup
+                            if (map.getLayoutProperty(map_layerID, 'visibility') === 'visible' && !markerClicked) {
+                                const popup = new mapboxgl.Popup({
+                                    maxWidth: 'none', // Allow the popup to be wider than the map container
+                                });
+
+                                // Fetch the data using AJAX
+                                $.ajax({
+                                    url: '/get_info_data/',
+                                    data: { mapID: map_layerID }, // Send the mapID as a parameter
+                                    dataType: 'json',
+                                    success: function(data) {
+                                        let tableHTML = `
+                                            <table border="1" style="width: 400px;"> <!-- Adjust the width as needed -->
+                                                <tr>
+                                                    <th>Location</th>
+                                                    <th>Profile of Needs</th>
+                                                    <th>Registered Providers</th>
+                                                    <th>Care Providers</th>
+                                                    <th>ICB Contacts</th>
+                                                    <th>Void Agreement</th>
+                                                    <th>Additional Notes</th>
+                                                </tr>
+                                        `;
+
+                                        // Populate the table with fetched data
+                                        for (const obj of data) {
+                                            tableHTML += `
+                                                <tr>
+                                                    <td>${obj.location}</td>
+                                                    <td>${obj.profile_of_needs}</td>
+                                                    <td>${obj.registered_providers}</td>
+                                                    <td>${obj.care_providers}</td>
+                                                    <td>${obj.icb_contacts}</td>
+                                                    <td>${obj.void_agreement}</td>
+                                                    <td>${obj.additional_notes}</td>
+                                                </tr>
+                                            `;
+                                        }
+
+                                        tableHTML += `</table>`;
+
+                                        // Set the popup's HTML content
+                                        popup.setLngLat(e.lngLat)
+                                            .setHTML(tableHTML)
+                                            .addTo(map);
+
+                                        openPopups.push(popup);
+                                    }
+                                });
+                            }
+                            markerClicked = false;
+                        });
+
+                             
+                        // Change the cursor to a pointer when
+                        // the mouse is over the states layer.
+                        map.on('mouseenter', layerID, () => {
+                            map.getCanvas().style.cursor = 'pointer';
+                        });
+                             
+                        // Change the cursor back to a pointer
+                        // when it leaves the states layer.
+                        map.on('mouseleave', layerID, () => {
+                            map.getCanvas().style.cursor = '';
+                        });
+
+                        
+                    }
+
+                    markerMap[mapId] = markers;
+                    markertype[mapId] = markers_type;
+                    layermap[mapId] = layers;
+                    
+
+                    input.addEventListener('change', (e) => {
+                        const visibility = e.target.checked ? 'visible' : 'none';
+                        
+                        if(visibility == 'none'){
+                            for (const marker of markerMap[mapId]) {
+                                marker.remove();
+                            }
+                            closeAllPopups();
+                        }else{
+                            for (const marker of markerMap[mapId]) {
+                                marker.addTo(map);
+                            }
+                        }
+                        for(const layers_map of layermap[mapId]){
+                            map.setLayoutProperty(layers_map, 'visibility', visibility);
+                            map.setLayoutProperty(layers_map +'outline', 'visibility', visibility);
+                            map.setLayoutProperty(layers_map +'labels', 'visibility', visibility);
+                        }
+                    });
+                }
+            });
+
+
+
+                
+
+        </script>
+
+    </body>
+</html>
