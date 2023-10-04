@@ -88,15 +88,15 @@
 
 
             mapboxgl.accessToken = 'pk.eyJ1Ijoid2FzaTAwMDA3IiwiYSI6ImNsMmxkc2J0bTFnODgzY2x3ZWx4NXd1OXMifQ.o9Tr7BRTeDo-C45jjo810A';  
-            const filterGroup = document.getElementById('filter-group');
-            const map = new mapboxgl.Map({
+            let filterGroup = document.getElementById('filter-group');
+            let map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/streets-v12?optimize=true',
                 center: [-0.118092, 51.509865],
                 zoom: 5
             });
 
-            const popupContent = `
+            let popupContent = `
                 <p>Location:</p>
                 <input type="text" name="textLocation" id="textLocation">
                 
@@ -125,45 +125,52 @@
 
             
 
-            const markerMap = {},markertype = {};
-            const layermap = {};
+            let markerMap = {},markertype = {};
+            let layermap = {};
             map.on('load', () => {
                 let openPopups = [];
                 function closeAllPopups() {
-                    for (const popup of openPopups) {
+                    for (let popup of openPopups) {
                         popup.remove();
                     }
                     openPopups = []; // Clear the array
                 }
                 
-                for (const mapData of places.map) {
-                    const mapId = mapData.id;
+                for (let mapData of places.map) {
+                    let mapId = mapData.id;
+                    console.log(mapId);
 
-                    const symbol = mapId;
-                    const layerID = `poi-${mapId}`;
+                    let symbol = mapId;
+                    let layerID = `poi-${mapId}`;
 
-                    const input = document.createElement('input');
+                    let input = document.createElement('input');
                     input.type = 'checkbox';
                     input.id = layerID;
                     input.checked = false;
                     filterGroup.appendChild(input);
 
-                    const label = document.createElement('label');
+                    let label = document.createElement('label');
                     label.setAttribute('for', layerID);
                     label.textContent = symbol;
                     filterGroup.appendChild(label);
 
-                    const markers = [],layers = [],markers_type = [];
+                    let markers = [],layers = [],markers_type = [];
                     let markerClicked = false;
 
-                    for (const polygon of mapData.polygons) {
+                    for (let polygon of mapData.polygons) {
                         let info = '';
-                        const map_layerID = `poi-${polygon.features.properties["name"]}`;
+                        let map_layerID = '';
+                        if (mapId == "County Lines"){
+                            map_layerID = `poi-${polygon.features.properties["name"]}`;
+                        }else{
+                            map_layerID = `poi-${polygon.features.properties["ICB23CD"]}`;
+                        }
+                        
 
                         // Mark popup for color
-                        const color = polygon.color;
-                        const [longitude, latitude] = color;
-                        const marker = new mapboxgl.Marker()
+                        let color = polygon.color;
+                        let [longitude, latitude] = color;
+                        let marker = new mapboxgl.Marker()
                             .setLngLat([longitude, latitude]);
                         // Setting popup html
                         let markerPopup = new mapboxgl.Popup();
@@ -173,9 +180,9 @@
                         markers_type.push(0);
 
                         // Mark popup for text
-                        const text = polygon.text;
-                        const [longitude1, latitude1] = text;
-                        const marker1 = new mapboxgl.Marker()
+                        let text = polygon.text;
+                        let [longitude1, latitude1] = text;
+                        let marker1 = new mapboxgl.Marker()
                             .setLngLat([longitude1, latitude1]);
                         // Setting popup html
                         let markerPopup1 = new mapboxgl.Popup();
@@ -188,11 +195,11 @@
                         
                         // Changing color frrom the marker pop up
                         markerPopup.on('open', () => {
-                            const setTextBtn = document.getElementById('setTextBtn');
+                            let setTextBtn = document.getElementById('setTextBtn');
 
                             setTextBtn.addEventListener('click', () => {
                                
-                                const setColor = document.getElementById('colorInput');
+                                let setColor = document.getElementById('colorInput');
                                 
                                 map.setPaintProperty(map_layerID, 'fill-color', setColor.value); 
                                 $.ajax({
@@ -229,11 +236,11 @@
                                     success: function(data) {
                                         let polygon_color = '#ffffff';
                                         // Populate the table with fetched data
-                                        for (const obj of data) {
+                                        for (let obj of data) {
                                             polygon_color = obj.color;
                                         }
 
-                                        const geojson = polygon.features;
+                                        let geojson = polygon.features;
                                         map.addSource(map_layerID, {
                                             type: 'geojson',
                                             data: geojson,
@@ -269,7 +276,7 @@
                                     }
                                 });
 
-                            const label_places = {
+                            let label_places = {
                                 'type': 'FeatureCollection',
                                 'features': [
                                     {
@@ -311,7 +318,7 @@
                         map.on('click', map_layerID, (e) => {
                             // Check if the layer's visibility is 'visible' before showing the popup
                             if (map.getLayoutProperty(map_layerID, 'visibility') === 'visible' && !markerClicked) {
-                                const popup = new mapboxgl.Popup({
+                                let popup = new mapboxgl.Popup({
                                     maxWidth: 'none', // Allow the popup to be wider than the map container
                                 });
 
@@ -331,11 +338,12 @@
                                                     <th>ICB Contacts</th>
                                                     <th>Void Agreement</th>
                                                     <th>Additional Notes</th>
+                                                    <th>Delete</th>
                                                 </tr>
                                         `;
 
                                         // Populate the table with fetched data
-                                        for (const obj of data) {
+                                        for (let obj of data) {
                                             tableHTML += `
                                                 <tr>
                                                     <td>${obj.location}</td>
@@ -345,6 +353,13 @@
                                                     <td>${obj.icb_contacts}</td>
                                                     <td>${obj.void_agreement}</td>
                                                     <td>${obj.additional_notes}</td>
+                                                    <td> 
+                                                        <form action="/delete_info/${obj.id}" method="POST">
+                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                                        <input type="submit" name="delete_info" value="Delete">
+                                                        </form>
+                                                    </td>
+                                                    
                                                 </tr>
                                             `;
                                         }
@@ -385,19 +400,19 @@
                     
 
                     input.addEventListener('change', (e) => {
-                        const visibility = e.target.checked ? 'visible' : 'none';
+                        let visibility = e.target.checked ? 'visible' : 'none';
                         
                         if(visibility == 'none'){
-                            for (const marker of markerMap[mapId]) {
+                            for (let marker of markerMap[mapId]) {
                                 marker.remove();
                             }
                             closeAllPopups();
                         }else{
-                            for (const marker of markerMap[mapId]) {
+                            for (let marker of markerMap[mapId]) {
                                 marker.addTo(map);
                             }
                         }
-                        for(const layers_map of layermap[mapId]){
+                        for(let layers_map of layermap[mapId]){
                             map.setLayoutProperty(layers_map, 'visibility', visibility);
                             map.setLayoutProperty(layers_map +'outline', 'visibility', visibility);
                             map.setLayoutProperty(layers_map +'labels', 'visibility', visibility);

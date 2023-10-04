@@ -1,5 +1,5 @@
 from pyexpat.errors import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 # from .models import Information, LoginInfo
 from django.contrib.auth.models import User, auth
@@ -10,14 +10,25 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 # Create your views here.
 flag = 0
-@login_required
+# @login_required
 def home(request):
     print(request.user.is_authenticated)
     if flag == 1:
         return render(request, 'home.html')
     else:
         return HttpResponse("Please log in first")
-
+    
+def delete_info(request, obj_id):
+    try:
+        obj_to_delete = AddInfo.objects.get(id=obj_id)
+        obj_to_delete.delete()
+        flag = 1
+        
+        return redirect('home')  
+    except AddInfo.DoesNotExist:
+       
+        return HttpResponse("vfvdfs")
+    
 def create(request):
     if request.method == 'POST':
         setColor = request.POST.get('setColor')
