@@ -96,34 +96,7 @@
                 zoom: 5
             });
 
-            let popupContent = `
-                <p>Location:</p>
-                <input type="text" name="textLocation" id="textLocation">
-                
-                <p>Profile of Needs:</p>
-                <input type="text" name="textProfile" id="textProfile">
-               
-                <p>Registered Providers:</p>
-                <input type="text" name="textRegistered" id="textRegistered">
-            
-                <p>Care Providers:</p>
-                <input type="text" name="textCare" id="textCare">
-
-                <p>Commissioning / ICB Contacts: </p>
-                <input type="text" name="textICB" id="textICB">
-                
-                <p>Nominations and Void Agreements: </p>
-                <input type="text" name="textAgreements" id="textAgreements">
-
-                <p>Additional Notes: </p>
-                <input type="text" name="textNotes" id="textNotes">
-
-                <p>Enter a color code:</p>
-                <input type="color" name="colorInput" id="colorInput">
-                <button id="setTextBtn">Enter</button>
-            `;
-
-            
+            let popupContent = ``;
 
             let markerMap = {},markertype = {};
             let layermap = {};
@@ -193,38 +166,7 @@
                             markerClicked = true;
                         });
                         
-                        // Changing color frrom the marker pop up
-                        markerPopup.on('open', () => {
-                            let setTextBtn = document.getElementById('setTextBtn');
-
-                            setTextBtn.addEventListener('click', () => {
-                               
-                                let setColor = document.getElementById('colorInput');
-                                
-                                map.setPaintProperty(map_layerID, 'fill-color', setColor.value); 
-                                $.ajax({
-                                    type : 'POST',
-                                    url : '/create',
-                                    data : {
-                                        setColor : $('#colorInput').val(),
-                                        setLocation : $('#textLocation').val(),
-                                        setProfile : $('#textProfile').val(),
-                                        setRegistered : $('#textRegistered').val(),
-                                        setCare : $('#textCare').val(),
-                                        setICB : $('#textICB').val(),
-                                        setAgreements : $('#textAgreements').val(),
-                                        setNotes : $('#textNotes').val(),
-                                        setMapID : map_layerID,                            
-                                        csrfmiddlewaretoken : csrfToken
-                                    },
-                                    success : function(){
-                                        console.log("sending data")
-                                    }
-                                })
-                                markerPopup.remove(); 
-                            });
-
-                        });
+                        
                         
 
                         if (!map.getLayer(layerID)) {
@@ -359,7 +301,6 @@
                                                         <input type="submit" name="delete_info" value="Delete">
                                                         </form>
                                                     </td>
-                                                    
                                                 </tr>
                                             `;
                                         }
@@ -372,11 +313,79 @@
                                             .addTo(map);
 
                                         openPopups.push(popup);
+
+                                        // Add the "Add Info" button outside the table
+                                        let addInfoButton = document.createElement('button');
+                                        addInfoButton.textContent = 'Add Info';
+                                        addInfoButton.addEventListener('click', function() {
+                                            // Replace the existing popup content with the form
+                                            let newPopupContent = `
+                                                <p>Location:</p>
+                                                <input type="text" name="textLocation" id="textLocation">
+                                                
+                                                <p>Profile of Needs:</p>
+                                                <input type="text" name="textProfile" id="textProfile">
+                                            
+                                                <p>Registered Providers:</p>
+                                                <input type="text" name="textRegistered" id="textRegistered">
+                                            
+                                                <p>Care Providers:</p>
+                                                <input type="text" name="textCare" id="textCare">
+
+                                                <p>Commissioning / ICB Contacts: </p>
+                                                <input type="text" name="textICB" id="textICB">
+                                                
+                                                <p>Nominations and Void Agreements: </p>
+                                                <input type="text" name="textAgreements" id="textAgreements">
+
+                                                <p>Additional Notes: </p>
+                                                <input type="text" name="textNotes" id="textNotes">
+
+                                                <p>Enter a color code:</p>
+                                                <input type="color" name="colorInput" id="colorInput">
+                                                <button id="setTextBtn">Enter</button>
+                                            `;
+
+                                            popup.setHTML(newPopupContent);
+                                            // Add click event for the "Enter" button in the form
+                                            document.getElementById('setTextBtn').addEventListener('click', function() {
+                                                // Save the data
+                                                let setColor = document.getElementById('colorInput');
+
+                                                map.setPaintProperty(map_layerID, 'fill-color', setColor.value); 
+                                                $.ajax({
+                                                    type: 'POST',
+                                                    url: '/create',
+                                                    data: {
+                                                        setColor: $('#colorInput').val(),
+                                                        setLocation: $('#textLocation').val(),
+                                                        setProfile: $('#textProfile').val(),
+                                                        setRegistered: $('#textRegistered').val(),
+                                                        setCare: $('#textCare').val(),
+                                                        setICB: $('#textICB').val(),
+                                                        setAgreements: $('#textAgreements').val(),
+                                                        setNotes: $('#textNotes').val(),
+                                                        setMapID: map_layerID,                            
+                                                        csrfmiddlewaretoken: csrfToken
+                                                    },
+                                                    success: function() {
+                                                        console.log("Data saved");
+                                                        // Close the current popup
+                                                        popup.remove();
+                                                    }
+                                                });
+                                            });
+                                        });
+
+                                        // Insert the button above the table
+                                        let popupContent = document.querySelector('.mapboxgl-popup-content');
+                                        popupContent.insertBefore(addInfoButton, popupContent.firstChild);
                                     }
                                 });
                             }
                             markerClicked = false;
                         });
+
 
                              
                         // Change the cursor to a pointer when
@@ -401,17 +410,6 @@
 
                     input.addEventListener('change', (e) => {
                         let visibility = e.target.checked ? 'visible' : 'none';
-                        
-                        if(visibility == 'none'){
-                            for (let marker of markerMap[mapId]) {
-                                marker.remove();
-                            }
-                            closeAllPopups();
-                        }else{
-                            for (let marker of markerMap[mapId]) {
-                                marker.addTo(map);
-                            }
-                        }
                         for(let layers_map of layermap[mapId]){
                             map.setLayoutProperty(layers_map, 'visibility', visibility);
                             map.setLayoutProperty(layers_map +'outline', 'visibility', visibility);
