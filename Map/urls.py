@@ -27,8 +27,9 @@ urlpatterns = [
     path('home/', views.home, name="home"),
     path('', views.login, name="login"),
     path('create', views.create, name="create"),
+    path('delete', views.delete, name="delete"),
     path('get_info_data/', views.get_info_data, name='get_info_data'),
-    path('delete_info/<int:obj_id>', views.delete_info, name='delete_info'),
+  
     
     
 ]

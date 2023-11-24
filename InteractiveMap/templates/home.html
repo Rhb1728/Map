@@ -296,10 +296,7 @@
                                                     <td>${obj.void_agreement}</td>
                                                     <td>${obj.additional_notes}</td>
                                                     <td> 
-                                                        <form action="/delete_info/${obj.id}" method="POST">
-                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                                                        <input type="submit" name="delete_info" value="Delete">
-                                                        </form>
+                                                        <button class="deleteBtn" data-item-id=${obj.id}>Delete</button>
                                                     </td>
                                                 </tr>
                                             `;
@@ -313,7 +310,35 @@
                                             .addTo(map);
 
                                         openPopups.push(popup);
+                                        var deleteButtons = document.querySelectorAll('.deleteBtn');
 
+                                        if (deleteButtons) {
+                                            deleteButtons.forEach(function(deleteBtn) {
+                                                deleteBtn.addEventListener('click', function() {
+                                                    // Save the data
+                                                    var itemId = this.dataset.itemId;
+
+                                                    $.ajax({
+                                                        type: 'POST',
+                                                        url: '/delete',
+                                                        data: {
+                                                            id: itemId,
+                                                            csrfmiddlewaretoken: csrfToken
+                                                        },
+                                                        success: function() {
+                                                            console.log("Data deleted");
+                                                            // Close the current popup
+                                                            popup.remove();
+                                                        },
+                                                        error: function(xhr, status, error) {
+                                                            console.error('Error:', error);
+                                                        }
+                                                    });
+                                                });
+                                            });
+                                        } else {
+                                                console.error("Element with ID 'deleteBtn' not found.");
+                                            }
                                         // Add the "Add Info" button outside the table
                                         let addInfoButton = document.createElement('button');
                                         addInfoButton.textContent = 'Add Info';
@@ -420,7 +445,7 @@
             });
 
 
-
+            
                 
 
         </script>

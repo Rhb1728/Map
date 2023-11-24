@@ -17,17 +17,7 @@ def home(request):
         return render(request, 'home.html')
     else:
         return HttpResponse("Please log in first")
-    
-def delete_info(request, obj_id):
-    try:
-        obj_to_delete = AddInfo.objects.get(id=obj_id)
-        obj_to_delete.delete()
-        flag = 1
-        
-        return redirect('home')  
-    except AddInfo.DoesNotExist:
-       
-        return HttpResponse("vfvdfs")
+
     
 def create(request):
     if request.method == 'POST':
@@ -91,3 +81,11 @@ def login(request):
         
    
     return render(request, 'login.html')
+
+def delete(request):
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        obj_to_delete = AddInfo.objects.get(id=id)
+        obj_to_delete.delete()  
+
+    return render(request, 'home.html')
