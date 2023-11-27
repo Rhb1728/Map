@@ -1,3 +1,4 @@
+import json
 from pyexpat.errors import messages
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
@@ -89,3 +90,30 @@ def delete(request):
         obj_to_delete.delete()  
 
     return render(request, 'home.html')
+
+
+def update_data(request):
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        location = request.POST.get('location')
+        profile_of_needs = request.POST.get('profile_of_needs')
+        registered_providers = request.POST.get('registered_providers')
+        care_providers = request.POST.get('care_providers')
+        icb_contacts = request.POST.get('icb_contacts')
+        void_agreement = request.POST.get('void_agreement')
+        additional_notes = request.POST.get('additional_notes')
+        
+        obj_to_edit = AddInfo.objects.get(id=id)
+        obj_to_edit.location = location
+        obj_to_edit.profile_of_needs = profile_of_needs
+        obj_to_edit.registered_providers = registered_providers
+        obj_to_edit.care_providers = care_providers
+        obj_to_edit.icb_contacts = icb_contacts
+        obj_to_edit.void_agreement = void_agreement
+        obj_to_edit.additional_notes = additional_notes
+        obj_to_edit.save()
+        
+
+
+    return render(request, 'home.html')
+    

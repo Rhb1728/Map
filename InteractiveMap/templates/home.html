@@ -271,7 +271,7 @@
                                     dataType: 'json',
                                     success: function(data) {
                                         let tableHTML = `
-                                            <table border="1" style="width: 400px;"> <!-- Adjust the width as needed -->
+                                            <table id= "myTable" border="1" style="width: 400px;"> <!-- Adjust the width as needed -->
                                                 <tr>
                                                     <th>Location</th>
                                                     <th>Profile of Needs</th>
@@ -281,6 +281,7 @@
                                                     <th>Void Agreement</th>
                                                     <th>Additional Notes</th>
                                                     <th>Delete</th>
+                                                    <th>Save Edit</th>
                                                 </tr>
                                         `;
 
@@ -288,16 +289,17 @@
                                         for (let obj of data) {
                                             tableHTML += `
                                                 <tr>
-                                                    <td>${obj.location}</td>
-                                                    <td>${obj.profile_of_needs}</td>
-                                                    <td>${obj.registered_providers}</td>
-                                                    <td>${obj.care_providers}</td>
-                                                    <td>${obj.icb_contacts}</td>
-                                                    <td>${obj.void_agreement}</td>
-                                                    <td>${obj.additional_notes}</td>
+                                                    <td contenteditable="true" class="editable">${obj.location}</td>
+                                                    <td contenteditable="true" class="editable"">${obj.profile_of_needs}</td>
+                                                    <td contenteditable="true" class="editable"">${obj.registered_providers}</td>
+                                                    <td contenteditable="true" class="editable"">${obj.care_providers}</td>
+                                                    <td contenteditable="true" class="editable"">${obj.icb_contacts}</td>
+                                                    <td contenteditable="true" class="editable"">${obj.void_agreement}</td>
+                                                    <td contenteditable="true" class="editable"">${obj.additional_notes}</td>
                                                     <td> 
                                                         <button class="deleteBtn" data-item-id=${obj.id}>Delete</button>
                                                     </td>
+                                                    <td><button class="saveBtn" data-item-id=${obj.id}>Save Edit</button></td>
                                                 </tr>
                                             `;
                                         }
@@ -339,6 +341,54 @@
                                         } else {
                                                 console.error("Element with ID 'deleteBtn' not found.");
                                             }
+
+
+                                            var editButtons = document.querySelectorAll('.saveBtn');
+                                            var table = document.getElementById('myTable');
+                                            if (editButtons) {
+                                                editButtons.forEach(function(saveBtn) {
+                                                saveBtn.addEventListener('click', function() {
+                                                    
+                                                    var itemId = this.dataset.itemId;
+                                                    var row = this.closest('tr');
+                                                    var editableCells = row.querySelectorAll('.editable');
+                                                   
+                                                    var location = editableCells[0].innerText;
+                                                    var profile_of_needs = editableCells[1].innerText;
+                                                    var registered_providers = editableCells[2].innerText;
+                                                    var care_providers = editableCells[3].innerText;
+                                                    var icb_contacts = editableCells[4].innerText;
+                                                    var void_agreement = editableCells[5].innerText;
+                                                    var additional_notes = editableCells[6].innerText;
+
+                                                    // Perform an AJAX request to send the updated data to the server
+                                                    $.ajax({
+                                                        type: 'POST',
+                                                        url: '/update', // Update this URL according to your Django configuration
+                                                        data: {
+                                                            id: itemId,
+                                                            location: location,
+                                                            profile_of_needs:profile_of_needs,
+                                                            registered_providers:registered_providers,
+                                                            care_providers:care_providers,
+                                                            icb_contacts:icb_contacts,
+                                                            void_agreement:void_agreement,
+                                                            additional_notes:additional_notes,
+                                                            csrfmiddlewaretoken: csrfToken
+                                                        },
+                                                        success: function () {
+                                                            console.log("Data updated");
+                                                            popup.remove();
+                                                        },
+                                                        error: function (xhr, status, error) {
+                                                            console.error('Error:', error);
+                                                        }
+                                                    });
+                                                });
+                                            });
+
+                                            }
+
                                         // Add the "Add Info" button outside the table
                                         let addInfoButton = document.createElement('button');
                                         addInfoButton.textContent = 'Add Info';

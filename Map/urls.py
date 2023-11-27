@@ -29,6 +29,7 @@ urlpatterns = [
     path('create', views.create, name="create"),
     path('delete', views.delete, name="delete"),
     path('get_info_data/', views.get_info_data, name='get_info_data'),
+    path('update', views.update_data, name='update'),
   
     
     
