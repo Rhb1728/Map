@@ -76,16 +76,26 @@
         </script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script type = "text/javascript">
-            var jsonUrl = "{% static 'map_source.json' %}";
-            let places;
-            fetch(jsonUrl)
-                .then((res) => res.json())
-                .then((jsonData) => {
-                    places = jsonData;
-                })
-                .catch((error) => console.error("Error fetching JSON:", error));
 
+        function fetchMapSource() {
+        var jsonUrl = "{% static 'map_source.json' %}";
+        let places;
 
+        return fetch(jsonUrl)
+            .then((res) => res.json())
+            .then((jsonData) => {
+                places = jsonData;
+                return places; // Returning 'places' after it's set
+            })
+            .catch((error) => {
+                console.error("Error fetching JSON:", error);
+                return null; // Returning null if an error occurs
+            });
+    }
+
+ fetchMapSource()
+        .then((places)=>{
+            if (places) {
 
             mapboxgl.accessToken = 'pk.eyJ1Ijoid2FzaTAwMDA3IiwiYSI6ImNsMmxkc2J0bTFnODgzY2x3ZWx4NXd1OXMifQ.o9Tr7BRTeDo-C45jjo810A';  
             let filterGroup = document.getElementById('filter-group');
@@ -494,7 +504,11 @@
                 }
             });
 
-
+        }else {
+                // Handle case where data is null or an error occurred
+                console.log("Data is null or an error occurred.");
+            }
+        });
             
                 
 
