@@ -64,10 +64,62 @@
                 content: '✔';
                 margin-right: 5px;
             }
+
+            .content {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width:100%;
+                height:100%;
+            }
+            .loader-wrapper {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                background-color: #242f3f;
+                display:flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .loader {
+                display: inline-block;
+                width: 30px;
+                height: 30px;
+                position: relative;
+                border: 4px solid #Fff;
+                animation: loader 2s infinite ease;
+            }
+            .loader-inner {
+                vertical-align: top;
+                display: inline-block;
+                width: 100%;
+                background-color: #fff;
+                animation: loader-inner 2s infinite ease-in;
+            }
+    
+            @keyframes loader {
+                0% { transform: rotate(0deg);}
+                25% { transform: rotate(180deg);}
+                50% { transform: rotate(180deg);}
+                75% { transform: rotate(360deg);}
+                100% { transform: rotate(360deg);}
+            }
+    
+            @keyframes loader-inner {
+                0% { height: 0%;}
+                25% { height: 0%;}
+                50% { height: 100%;}
+                75% { height: 100%;}
+                100% { height: 0%;}
+            }
         </style>
         <div id="map"></div>
         <nav id="filter-group" class="filter-group"></nav>
-        
+        <div class="loader-wrapper">
+            <span class="loader"><span class="loader-inner"></span></span>
+        </div>
         <!-- <script src="script.js"></script> -->
 
         {% load static %}
@@ -77,21 +129,38 @@
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script type = "text/javascript">
 
-        function fetchMapSource() {
-        var jsonUrl = "{% static 'map_source.json' %}";
-        let places;
-
-        return fetch(jsonUrl)
-            .then((res) => res.json())
-            .then((jsonData) => {
-                places = jsonData;
-                return places; // Returning 'places' after it's set
-            })
-            .catch((error) => {
-                console.error("Error fetching JSON:", error);
-                return null; // Returning null if an error occurs
-            });
-    }
+            function fetchMapSource() {
+                var jsonUrl = "{% static 'map_source.json' %}";
+                let places;
+            
+                // Show loader before fetching
+                showLoader();
+            
+                return fetch(jsonUrl)
+                    .then((res) => res.json())
+                    .then((jsonData) => {
+                        places = jsonData;
+                        return places;
+                    })
+                    .catch((error) => {
+                        console.error("Error fetching JSON:", error);
+                        return null;
+                    })
+                    .finally(() => {
+                        
+                        hideLoader();
+                    });
+            }
+            
+            function showLoader() {
+                // Show loader by setting display property
+                document.querySelector('.loader-wrapper').style.display = 'flex';
+            }
+            
+            function hideLoader() {
+                // Hide loader by setting display property
+                document.querySelector('.loader-wrapper').style.display = 'none';
+            }
 
  fetchMapSource()
         .then((places)=>{
