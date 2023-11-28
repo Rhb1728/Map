@@ -21,6 +21,7 @@ def home(request):
 
     
 def create(request):
+    user = request.user
     if request.method == 'POST':
         setColor = request.POST.get('setColor')
         setLocation = request.POST.get('setLocation')
@@ -32,7 +33,7 @@ def create(request):
         setNotes = request.POST.get('setNotes')
         setMapID = request.POST.get('setMapID')
 
-        new_info = AddInfo(mapID = setMapID,location = setLocation,profile_of_needs = setProfile,registered_providers = setRegistered,care_providers = setCare,icb_contacts = setICB,void_agreement = setAgreements,additional_notes = setNotes,color =setColor)
+        new_info = AddInfo(mapID = setMapID,location = setLocation,profile_of_needs = setProfile,registered_providers = setRegistered,care_providers = setCare,icb_contacts = setICB,void_agreement = setAgreements,additional_notes = setNotes,color =setColor,user=user)
         new_info.save()
         # check if info is adding or not
         # all_objects = AddInfo.objects.all()
@@ -47,7 +48,7 @@ def create(request):
         #     print(f"Additional Notes: {obj.additional_notes}")
         #     print(f"Color: {obj.color}")
         #     print("-----------------------------")
-        objects_with_same_mapID = AddInfo.objects.filter(mapID=setMapID)
+        objects_with_same_mapID = AddInfo.objects.filter(mapID=setMapID,user=user)
 
         # Update the color of all retrieved objects
         for obj in objects_with_same_mapID:
@@ -57,16 +58,17 @@ def create(request):
     return render(request, 'home.html')
 
 def get_info_data(request):
+    user = request.user
     if request.method == 'GET':
         map_id = request.GET.get('mapID')
         if map_id:
-            filtered_data = AddInfo.objects.filter(mapID=map_id)
+            filtered_data = AddInfo.objects.filter(mapID=map_id, user=user)
             data = list(filtered_data.values())  # Convert QuerySet to a list of dictionaries
             return JsonResponse(data, safe=False)
     
     return JsonResponse([], safe=False)
 
-def login(request):
+def loginn(request):
     global flag
     flag = 0
     message = 'Welcome to Interactive Map'
@@ -77,6 +79,7 @@ def login(request):
         user = authenticate(username=username, password=password)
         
         if user is not None: 
+            login(request, user)
             flag = 1
             return redirect('home')  
         
@@ -93,6 +96,7 @@ def delete(request):
 
 
 def update_data(request):
+   
     if request.method == 'POST':
         id = request.POST.get('id')
         location = request.POST.get('location')

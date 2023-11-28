@@ -25,7 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     #path('', include('Map.urls')),
     path('home/', views.home, name="home"),
-    path('', views.login, name="login"),
+    path('', views.loginn, name="login"),
     path('create', views.create, name="create"),
     path('delete', views.delete, name="delete"),
     path('get_info_data/', views.get_info_data, name='get_info_data'),
